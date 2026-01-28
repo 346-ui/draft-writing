@@ -1,28 +1,5 @@
 import streamlit as st
 
-# [보안] 비밀번호 설정 (원하는 비밀번호로 변경하세요)
-if "password" in st.secrets:
-    PASSWORD = st.secrets["password"]
-else:
-    # 로컬 테스트용 (Secrets 설정 안 했을 때)
-    PASSWORD = "1234"
-
-# 비밀번호 확인 로직
-if "authenticated" not in st.session_state:
-    st.session_state["authenticated"] = False
-
-if not st.session_state["authenticated"]:
-    # 비밀번호 입력창 표시
-    user_input = st.text_input("비밀번호를 입력하세요", type="password")
-    if st.button("로그인"):
-        if user_input == PASSWORD:
-            st.session_state["authenticated"] = True
-            st.rerun() # 화면 새로고침하여 앱 실행
-        else:
-            st.error("비밀번호가 틀렸습니다.")
-    st.stop() # 비밀번호가 맞을 때까지 아래 코드를 실행하지 않음
-
-# --- 아래부터 기존 코드 시작 ---
 # st.set_page_config(...)
 
 # 1. 페이지 기본 설정
@@ -151,4 +128,5 @@ else:
         value=st.session_state["full_text"],
         height=text_area_height,
         disabled=not is_goal_reached  # 여기가 핵심 로직입니다
+
     )
