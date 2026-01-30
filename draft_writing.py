@@ -1,4 +1,6 @@
 import streamlit as st
+import streamlit.components.v1 as components
+import time
 
 # st.set_page_config(...)
 
@@ -166,3 +168,4 @@ else:
     <div style="display:none;">{time.time()}</div>
     """
     components.html(js_smart_scroll, height=0)
+
