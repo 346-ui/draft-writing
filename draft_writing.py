@@ -132,40 +132,47 @@ else:
         disabled=not is_goal_reached  # 여기가 핵심 로직입니다
 
     )
-    # [핵심] 스마트 스크롤 로직 (자바스크립트)
-    js_smart_scroll = f"""
+    # [★ 핵심 수정] MutationObserver를 사용한 무지연 안정적 스크롤
+    js_observer = f"""
     <script>
-        setTimeout(function() {{
+        // 1. 스크롤 조작 함수 정의
+        function adjustScroll() {{
+            var textArea = window.parent.document.querySelector('textarea');
+            if (!textArea) return; // 아직 없으면 무시
+            // isAtBottom: 사용자가 마지막으로 맨 아래를 보고 있었는지 여부 (true/false)
+            var isAtBottom = sessionStorage.getItem("textAreaIsAtBottom") === 'true';
+            var savedPos = sessionStorage.getItem("textAreaScrollPosition");
+
+            if (isAtBottom) {{
+                textArea.scrollTop = textArea.scrollHeight;
+            }} else if (savedPos) {{
+                textArea.scrollTop = savedPos;
+            }}
+            
+            // 이벤트 리스너 재등록 (중복 방지 처리)
+            textArea.onscroll = function() {{
+                sessionStorage.setItem("textAreaScrollPosition", textArea.scrollTop);
+                var atBottom = (textArea.scrollHeight - textArea.scrollTop - textArea.clientHeight) < 10;
+                sessionStorage.setItem("textAreaIsAtBottom", atBottom);
+            }};
+        }}
+
+        // 2. MutationObserver: 화면에 textarea가 등장하는지 감시
+        var observer = new MutationObserver(function(mutations) {{
             var textArea = window.parent.document.querySelector('textarea');
             if (textArea) {{
-                // 1. 저장된 상태 불러오기
-                // isAtBottom: 사용자가 마지막으로 맨 아래를 보고 있었는지 여부 (true/false)
-                var isAtBottom = sessionStorage.getItem("textAreaIsAtBottom") === 'true';
-                var savedPos = sessionStorage.getItem("textAreaScrollPosition");
-
-                // 2. 위치 복원 로직 (스마트 판단)
-                if (isAtBottom) {{
-                    // 이전에 맨 아래를 보고 있었다면 -> 새 글이 추가되었으니 스크롤을 맨 끝까지 내림
-                    textArea.scrollTop = textArea.scrollHeight;
-                }} else if (savedPos) {{
-                    // 맨 아래가 아니었다면 -> 읽고 있던 위치 그대로 복원
-                    textArea.scrollTop = savedPos;
-                }}
-
-                // 3. 스크롤 이벤트 리스너: 사용자가 스크롤할 때마다 상태 저장
-                textArea.addEventListener("scroll", function() {{
-                    // 현재 위치 저장
-                    sessionStorage.setItem("textAreaScrollPosition", textArea.scrollTop);
-                    
-                    // 현재 맨 아래에 있는지 계산 (오차범위 10px 허용)
-                    // (전체높이 - 현재위치 - 화면높이)가 거의 0이면 맨 아래임
-                    var atBottom = (textArea.scrollHeight - textArea.scrollTop - textArea.clientHeight) < 10;
-                    sessionStorage.setItem("textAreaIsAtBottom", atBottom);
-                }});
+                adjustScroll();      // 발견 즉시 스크롤 조작
+                observer.disconnect(); // 임무 완료 후 감시 종료 (성능 최적화)
             }}
-        }}, 3);
+        }});
+
+        // 3. 감시 시작 (부모 문서의 body를 감시)
+        observer.observe(window.parent.document.body, {{ childList: true, subtree: true }});
+        
+        // 혹시 이미 로딩되어 있을 경우를 대비해 한 번 즉시 실행
+        adjustScroll();
     </script>
     <div style="display:none;">{time.time()}</div>
     """
-    components.html(js_smart_scroll, height=0)
-
+    components.html(js_observer, height=0)
+    
