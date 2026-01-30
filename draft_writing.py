@@ -130,3 +130,39 @@ else:
         disabled=not is_goal_reached  # 여기가 핵심 로직입니다
 
     )
+    # [핵심] 스마트 스크롤 로직 (자바스크립트)
+    js_smart_scroll = f"""
+    <script>
+        setTimeout(function() {{
+            var textArea = window.parent.document.querySelector('textarea');
+            if (textArea) {{
+                // 1. 저장된 상태 불러오기
+                // isAtBottom: 사용자가 마지막으로 맨 아래를 보고 있었는지 여부 (true/false)
+                var isAtBottom = sessionStorage.getItem("textAreaIsAtBottom") === 'true';
+                var savedPos = sessionStorage.getItem("textAreaScrollPosition");
+
+                // 2. 위치 복원 로직 (스마트 판단)
+                if (isAtBottom) {{
+                    // 이전에 맨 아래를 보고 있었다면 -> 새 글이 추가되었으니 스크롤을 맨 끝까지 내림
+                    textArea.scrollTop = textArea.scrollHeight;
+                }} else if (savedPos) {{
+                    // 맨 아래가 아니었다면 -> 읽고 있던 위치 그대로 복원
+                    textArea.scrollTop = savedPos;
+                }}
+
+                // 3. 스크롤 이벤트 리스너: 사용자가 스크롤할 때마다 상태 저장
+                textArea.addEventListener("scroll", function() {{
+                    // 현재 위치 저장
+                    sessionStorage.setItem("textAreaScrollPosition", textArea.scrollTop);
+                    
+                    // 현재 맨 아래에 있는지 계산 (오차범위 10px 허용)
+                    // (전체높이 - 현재위치 - 화면높이)가 거의 0이면 맨 아래임
+                    var atBottom = (textArea.scrollHeight - textArea.scrollTop - textArea.clientHeight) < 10;
+                    sessionStorage.setItem("textAreaIsAtBottom", atBottom);
+                }});
+            }}
+        }}, 3);
+    </script>
+    <div style="display:none;">{time.time()}</div>
+    """
+    components.html(js_smart_scroll, height=0)
