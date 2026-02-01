@@ -80,6 +80,14 @@ if show_counter:
         st.caption(f"현재: {current_length}자 / 목표: {target_count}자 ({int(progress*100)}%)")
 
 # [핵심] 텍스트 입력 및 저장 처리 함수
+
+if hide_history and not is_goal_reached:
+    st.info("🔒 몰입 모드 실행 중...")
+else:
+    st.text_area("히스토리", st.session_state["full_text"], height=400, disabled=not is_goal_reached, label_visibility="collapsed")
+    if is_goal_reached:
+        st.caption("🔓 잠금 해제됨: 자유롭게 수정 가능합니다.")
+        
 def submit_text():
     input_text = st.session_state.widget_input
     if input_text:
@@ -93,13 +101,6 @@ def submit_text():
 st.text_input("내용 입력 👇", key="widget_input", on_change=submit_text, placeholder="생각나는 대로 적고 엔터를 누르세요.")
 
 st.subheader("📝 작성된 내용")
-
-if hide_history and not is_goal_reached:
-    st.info("🔒 몰입 모드 실행 중...")
-else:
-    st.text_area("히스토리", st.session_state["full_text"], height=400, disabled=not is_goal_reached, label_visibility="collapsed")
-    if is_goal_reached:
-        st.caption("🔓 잠금 해제됨: 자유롭게 수정 가능합니다.")
 
     # 스크롤 유지 기능 (MutationObserver)
     js_observer = f"""
@@ -139,6 +140,7 @@ else:
     <div style="display:none;">{time.time()}</div>
     """
     components.html(js_observer, height=0)
+
 
 
 
