@@ -28,7 +28,24 @@ if "full_text" not in st.session_state:
         # st.toast("🔄 이전에 쓰던 글을 복구했습니다!", icon="📂")
     else:
         st.session_state["full_text"] = ""
+# (1) 글자 수 표시 설정
+if "show_counter_val" not in st.session_state:
+    saved_show = localS.getItem("setting_show_counter")
+    # 저장된 값이 없으면 기본값 True (켜짐)
+    if saved_show is None: 
+        st.session_state["show_counter_val"] = True
+    else:
+        st.session_state["show_counter_val"] = saved_show
 
+# (2) 몰입 모드 설정
+if "hide_history_val" not in st.session_state:
+    saved_hide = localS.getItem("setting_hide_history")
+    # 저장된 값이 없으면 기본값 False (꺼짐)
+    if saved_hide is None:
+        st.session_state["hide_history_val"] = False
+    else:
+        st.session_state["hide_history_val"] = saved_hide
+        
 if "confirm_reset" not in st.session_state: st.session_state["confirm_reset"] = False
 
 
@@ -40,6 +57,11 @@ with st.sidebar:
         # 현재 입력된 값을 가져와서 로컬 스토리지에 저장
         current_val = st.session_state["target_count_val"]
         localS.setItem("my_target_count", current_val)
+    def save_show_counter():
+        localS.setItem("setting_show_counter", st.session_state["show_counter_val"])
+        
+    def save_hide_history():
+        localS.setItem("setting_hide_history", st.session_state["hide_history_val"])
 
     # [수정된 입력창] key와 on_change를 사용하여 값 유지 및 자동 저장 구현
     target_count = st.number_input(
@@ -51,8 +73,17 @@ with st.sidebar:
         help="목표를 달성하면 작성한 글의 수정 잠금이 해제됩니다."
     )
     st.divider()
-    show_counter = st.toggle("글자 수 표시", value=True)
-    hide_history = st.toggle("몰입 모드 (작성한 글 숨기기)", value=False)
+    # [수정됨] 토글에도 key와 on_change를 붙여서 상태 저장
+    show_counter = st.toggle(
+        "글자 수 표시", 
+        key="show_counter_val", 
+        on_change=save_show_counter)
+    
+    hide_history = st.toggle(
+        "몰입 모드 (작성한 글 숨기기)", 
+        key="hide_history_val", 
+        on_change=save_hide_history)
+    
     st.divider()
     st.download_button("💾 다운로드 (.txt)", st.session_state["full_text"], "draft.txt")
     
@@ -64,8 +95,16 @@ with st.sidebar:
         if col1.button("✅ 예"):
             st.session_state["full_text"] = ""
             # [핵심] 초기화 시 로컬 스토리지도 비우기
-            localS.deleteItem("my_draft_text") 
+            localS.deleteItem("my_draft_text")
+            localS.deleteItem("my_target_count")
+            localS.deleteItem("setting_show_counter")
+            localS.deleteItem("setting_hide_history")
+            
             st.session_state["confirm_reset"] = False
+            st.session_state["target_count_val"] = 1000
+            st.session_state["show_counter_val"] = True
+            st.session_state["hide_history_val"] = False
+            
             st.rerun()
         if col2.button("❌ 아니오"):
             st.session_state["confirm_reset"] = False
@@ -96,7 +135,7 @@ is_goal_reached = current_length >= target_count
 # 프로그래스 바 및 상태 표시
 if show_counter:
     progress = min(current_length / target_count, 1.0)
-    if is_goal_reached: st.success(f"🎉 ({current_length}자) 목표 달성!")
+    if is_goal_reached: st.success(f"🎉 ({current_length}자/{target_count}자) 목표 달성!")
     else: 
         st.progress(progress)
         st.caption(f"현재: {current_length}자 / 목표: {target_count}자 ({int(progress*100)}%)")
@@ -162,6 +201,7 @@ js_observer = f"""
     <div style="display:none;">{time.time()}</div>
     """
 components.html(js_observer, height=0)
+
 
 
 
