@@ -87,7 +87,7 @@ with st.sidebar:
     st.divider()
     st.download_button("💾 다운로드 (.txt)", st.session_state["full_text"], "draft.txt")
     
-    if st.button("🗑️ 초기화"): st.session_state["confirm_reset"] = True
+    if st.button("🗑️ 초기화"): st.session_state["confirm_reset"] = not st.session_state["confirm_reset"]
     
     if st.session_state["confirm_reset"]:
         st.warning("정말 모든 내용을 삭제하시겠습니까?")
@@ -201,6 +201,7 @@ js_observer = f"""
     <div style="display:none;">{time.time()}</div>
     """
 components.html(js_observer, height=0)
+
 
 
 
