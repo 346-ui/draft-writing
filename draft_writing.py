@@ -69,8 +69,9 @@ is_goal_reached = current_length >= target_count
 if show_counter:
     progress = min(current_length / target_count, 1.0)
     if is_goal_reached: st.success(f"🎉 ({current_length}자) 목표 달성!")
-    else: st.progress(progress)
-           st.caption(f"현재: {current_length}자 / 목표: {target_count}자 ({int(progress*100)}%)")
+    else: 
+        st.progress(progress)
+        st.caption(f"현재: {current_length}자 / 목표: {target_count}자 ({int(progress*100)}%)")
 
 # [핵심] 텍스트 입력 및 저장 처리 함수
 def submit_text():
@@ -132,3 +133,4 @@ else:
     <div style="display:none;">{time.time()}</div>
     """
     components.html(js_observer, height=0)
+
