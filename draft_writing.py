@@ -102,8 +102,8 @@ st.text_input("내용 입력 👇", key="widget_input", on_change=submit_text, p
 
 st.subheader("📝 작성된 내용")
 
-    # 스크롤 유지 기능 (MutationObserver)
-    js_observer = f"""
+# 스크롤 유지 기능 (MutationObserver)
+js_observer = f"""
     <script>
         function adjustScroll() {{
             var textArea = window.parent.document.querySelector('textarea');
@@ -140,6 +140,7 @@ st.subheader("📝 작성된 내용")
     <div style="display:none;">{time.time()}</div>
     """
     components.html(js_observer, height=0)
+
 
 
 
