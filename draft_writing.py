@@ -1,84 +1,65 @@
 import streamlit as st
 import streamlit.components.v1 as components
+from streamlit_local_storage import LocalStorage # [추가된 라이브러리]
 import time
 
-# st.set_page_config(...)
+# 1. 페이지 설정
+st.set_page_config(page_title="초고 전용 몰입 글쓰기", page_icon="✍️", layout="centered")
 
-# 1. 페이지 기본 설정
-st.set_page_config(
-    page_title="초고 전용 몰입 글쓰기",
-    page_icon="✍️",
-    layout="centered"
-)
+# [핵심] 로컬 스토리지 초기화
+localS = LocalStorage()
 
-# 2. 세션 상태 초기화
+# 2. 세션 상태 초기화 및 데이터 복구 로직
 if "full_text" not in st.session_state:
-    st.session_state["full_text"] = ""
-if "current_input" not in st.session_state:
-    st.session_state["current_input"] = ""
-# 초기화 확인 버튼 상태 관리
-if "confirm_reset" not in st.session_state:
-    st.session_state["confirm_reset"] = False
+    # (1) 로컬 스토리지에서 저장된 글이 있는지 확인
+    saved_text = localS.getItem("my_draft_text")
+    
+    if saved_text:
+        st.session_state["full_text"] = saved_text
+        # 복구되었음을 알리는 작은 알림 (선택사항)
+        # st.toast("🔄 이전에 쓰던 글을 복구했습니다!", icon="📂")
+    else:
+        st.session_state["full_text"] = ""
 
-# 3. 사이드바 설정
+if "confirm_reset" not in st.session_state: st.session_state["confirm_reset"] = False
+
+
+# 3. 사이드바
 with st.sidebar:
     st.header("⚙️ 설정")
-    
-    target_count = st.number_input(
-        "목표 글자 수", 
-        min_value=50, 
-        value=1000, 
-        step=50,
-        help="목표를 달성하면 작성한 글의 수정 잠금이 해제됩니다."
-    )
-    
+    target_count = st.number_input("목표 글자 수", min_value=50, value=1000, step=50, help="목표를 달성하면 작성한 글의 수정 잠금이 해제됩니다.")
     st.divider()
-    
     show_counter = st.toggle("글자 수 표시", value=True)
-    hide_history = st.toggle("몰입 모드 (이전 글 숨기기)", value=False)
-    
+    hide_history = st.toggle("몰입 모드 (작성한 글 숨기기)", value=False)
     st.divider()
+    st.download_button("💾 다운로드 (.txt)", st.session_state["full_text"], "draft.txt")
     
-    st.download_button(
-        label="📄 작성된 글 다운로드 (.txt)",
-        data=st.session_state["full_text"],
-        file_name="my_draft.txt",
-        mime="text/plain"
-    )
+    if st.button("🗑️ 초기화"): st.session_state["confirm_reset"] = True
     
-    # [기능 추가 1] 안전한 초기화 로직
-    if st.button("🗑️ 전체 초기화"):
-        st.session_state["confirm_reset"] = True
-
-    # 초기화 버튼을 눌렀을 때만 보이는 확인 메뉴
     if st.session_state["confirm_reset"]:
-        st.error("정말 모든 내용을 삭제하시겠습니까?")
-        col_yes, col_no = st.columns(2)
-        
-        with col_yes:
-            if st.button("✅ 예", use_container_width=True):
-                st.session_state["full_text"] = ""
-                st.session_state["confirm_reset"] = False
-                st.rerun() # 화면 새로고침
-        
-        with col_no:
-            if st.button("❌ 아니오", use_container_width=True):
-                st.session_state["confirm_reset"] = False
-                st.rerun()
+        st.warning("정말 모든 내용을 삭제하시겠습니까?")
+        col1, col2 = st.columns(2)
+        if col1.button("✅ 예"):
+            st.session_state["full_text"] = ""
+            # [핵심] 초기화 시 로컬 스토리지도 비우기
+            localS.deleteItem("my_draft_text") 
+            st.session_state["confirm_reset"] = False
+            st.rerun()
+        if col2.button("❌ 아니오"):
+            st.session_state["confirm_reset"] = False
+            st.rerun()
 
-# 4. 메인 화면 구성
-st.title("✍️ 초고 전용 글쓰기 툴")
+# 4. 메인 화면
+st.title("✍️ 초고 전용 몰입 글쓰기")
 
-with st.expander("ℹ️ 사용법 안내 (클릭해서 열기/닫기)", expanded=True):
+with st.expander("ℹ️ 사용법 (클릭해서 열기/닫기)", expanded=False):
     st.markdown("""
     **'멈추지 말고 계속 쓰세요!'**
     
     1.  **입력창**에 문장을 입력하고 **Enter**를 누르세요.
     2.  입력한 문장은 저장되며 수정할 수 없습니다.
-    3.  **목표 글자 수를 달성하면** 글이 '언락(Unlock)' 되어 복사 및 수정이 가능해집니다.
+    3.  **목표 글자 수를 달성하면** 글이 '언락(Unlock)' 되어 수정이 가능해집니다. (목표 글자 수는 왼쪽 사이드바에서 설정 가능합니다)
     """)
-
-st.divider()
 
 # 현재 글자 수 계산 및 달성 여부 확인
 current_length = len(st.session_state["full_text"])
@@ -87,58 +68,38 @@ is_goal_reached = current_length >= target_count
 # 프로그래스 바 및 상태 표시
 if show_counter:
     progress = min(current_length / target_count, 1.0)
-    
-    # 목표 달성 시 초록색 축하 메시지
-    if is_goal_reached:
-        st.success(f"🎉 목표 달성! ({current_length}자 / {target_count}자) - 이제 글을 복사하거나 수정할 수 있습니다.")
-        st.progress(1.0)
-    else:
-        st.progress(progress)
-        st.caption(f"현재: {current_length}자 / 목표: {target_count}자 ({int(progress*100)}%)")
+    if is_goal_reached: st.success(f"🎉 ({current_length}자) 목표 달성!")
+    else: st.progress(progress)
+           st.caption(f"현재: {current_length}자 / 목표: {target_count}자 ({int(progress*100)}%)")
 
-# 텍스트 입력 처리 함수
+# [핵심] 텍스트 입력 및 저장 처리 함수
 def submit_text():
-    text = st.session_state.widget_input
-    if text:
-        st.session_state["full_text"] += text + "\n"
+    input_text = st.session_state.widget_input
+    if input_text:
+        # 1. 세션에 추가
+        st.session_state["full_text"] += input_text + "\n"
+        # 2. 로컬 스토리지에 영구 저장 (Key: "my_draft_text")
+        localS.setItem("my_draft_text", st.session_state["full_text"])
+        
         st.session_state.widget_input = ""
 
-# 입력창 (목표 달성 후에도 계속 쓸 수 있음)
-st.text_input(
-    "여기에 내용을 입력하고 Enter를 누르세요 👇",
-    key="widget_input",
-    on_change=submit_text,
-    placeholder="생각나는 대로 적고 엔터를 누르세요."
-)
+st.text_input("내용 입력 👇", key="widget_input", on_change=submit_text, placeholder="생각나는 대로 적고 엔터를 누르세요.")
 
-# 작성된 글 보여주기 로직
 st.subheader("📝 작성된 내용")
 
 if hide_history and not is_goal_reached:
-    # 몰입 모드이고 목표 미달성 시에는 숨김
-    st.info("🔒 몰입 모드: 작성된 내용은 숨겨져 있습니다.")
+    st.info("🔒 몰입 모드 실행 중...")
 else:
-    # [기능 추가 2] 목표 달성 여부에 따라 disabled 속성 변경
-    # 목표 달성(True) -> disabled=False (수정/복사 가능)
-    # 목표 미달성(False) -> disabled=True (수정 불가)
-    text_area_height = 400
+    st.text_area("히스토리", st.session_state["full_text"], height=400, disabled=not is_goal_reached, label_visibility="collapsed")
     if is_goal_reached:
-        st.caption("🔓 잠금 해제됨: 자유롭게 복사(Ctrl+C)와 수정이 가능합니다.")
-    
-    st.text_area(
-        label="지금까지 쓴 글",
-        value=st.session_state["full_text"],
-        height=text_area_height,
-        disabled=not is_goal_reached  # 여기가 핵심 로직입니다
+        st.caption("🔓 잠금 해제됨: 자유롭게 수정 가능합니다.")
 
-    )
-    # [★ 핵심 수정] MutationObserver를 사용한 무지연 안정적 스크롤
+    # 스크롤 유지 기능 (MutationObserver)
     js_observer = f"""
     <script>
-        // 1. 스크롤 조작 함수 정의
         function adjustScroll() {{
             var textArea = window.parent.document.querySelector('textarea');
-            if (!textArea) return; // 아직 없으면 무시
+            if (!textArea) return;
             // isAtBottom: 사용자가 마지막으로 맨 아래를 보고 있었는지 여부 (true/false)
             var isAtBottom = sessionStorage.getItem("textAreaIsAtBottom") === 'true';
             var savedPos = sessionStorage.getItem("textAreaScrollPosition");
@@ -148,31 +109,26 @@ else:
             }} else if (savedPos) {{
                 textArea.scrollTop = savedPos;
             }}
-            
-            // 이벤트 리스너 재등록 (중복 방지 처리)
+           // 이벤트 리스너 재등록 (중복 방지 처리) 
             textArea.onscroll = function() {{
                 sessionStorage.setItem("textAreaScrollPosition", textArea.scrollTop);
                 var atBottom = (textArea.scrollHeight - textArea.scrollTop - textArea.clientHeight) < 10;
                 sessionStorage.setItem("textAreaIsAtBottom", atBottom);
             }};
         }}
-
         // 2. MutationObserver: 화면에 textarea가 등장하는지 감시
         var observer = new MutationObserver(function(mutations) {{
             var textArea = window.parent.document.querySelector('textarea');
             if (textArea) {{
-                adjustScroll();      // 발견 즉시 스크롤 조작
-                observer.disconnect(); // 임무 완료 후 감시 종료 (성능 최적화)
+                adjustScroll();
+                observer.disconnect();
             }}
         }});
-
         // 3. 감시 시작 (부모 문서의 body를 감시)
         observer.observe(window.parent.document.body, {{ childList: true, subtree: true }});
-        
         // 혹시 이미 로딩되어 있을 경우를 대비해 한 번 즉시 실행
         adjustScroll();
     </script>
     <div style="display:none;">{time.time()}</div>
     """
     components.html(js_observer, height=0)
-    
