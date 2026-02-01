@@ -9,6 +9,14 @@ st.set_page_config(page_title="초고 전용 몰입 글쓰기", page_icon="✍�
 # [핵심] 로컬 스토리지 초기화
 localS = LocalStorage()
 
+# 세션에 목표 글자 수가 없다면, 로컬 스토리지에서 확인해서 가져옴
+if "target_count_val" not in st.session_state:
+    saved_target = localS.getItem("my_target_count") # 저장된 키: my_target_count
+    if saved_target:
+        st.session_state["target_count_val"] = int(saved_target)
+    else:
+        st.session_state["target_count_val"] = 1000 # 기본값
+
 # 2. 세션 상태 초기화 및 데이터 복구 로직
 if "full_text" not in st.session_state:
     # (1) 로컬 스토리지에서 저장된 글이 있는지 확인
@@ -27,7 +35,21 @@ if "confirm_reset" not in st.session_state: st.session_state["confirm_reset"] = 
 # 3. 사이드바
 with st.sidebar:
     st.header("⚙️ 설정")
-    target_count = st.number_input("목표 글자 수", min_value=50, value=1000, step=50, help="목표를 달성하면 작성한 글의 수정 잠금이 해제됩니다.")
+    # [추가된 로직 2] 목표 글자 수 변경 시 실행될 저장 함수
+    def save_target_count():
+        # 현재 입력된 값을 가져와서 로컬 스토리지에 저장
+        current_val = st.session_state["target_count_val"]
+        localS.setItem("my_target_count", current_val)
+
+    # [수정된 입력창] key와 on_change를 사용하여 값 유지 및 자동 저장 구현
+    target_count = st.number_input(
+        "목표 글자 수", 
+        min_value=50, 
+        step=50, 
+        key="target_count_val",     # 세션 상태와 연결 (값 유지)
+        on_change=save_target_count, # 값이 바뀌면 즉시 저장 함수 실행
+        help="목표를 달성하면 작성한 글의 수정 잠금이 해제됩니다."
+    )
     st.divider()
     show_counter = st.toggle("글자 수 표시", value=True)
     hide_history = st.toggle("몰입 모드 (작성한 글 숨기기)", value=False)
@@ -140,6 +162,7 @@ js_observer = f"""
     <div style="display:none;">{time.time()}</div>
     """
 components.html(js_observer, height=0)
+
 
 
 
