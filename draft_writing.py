@@ -81,6 +81,7 @@ if show_counter:
 
 # [핵심] 텍스트 입력 및 저장 처리 함수
 
+st.subheader("📝 작성된 내용")
 if hide_history and not is_goal_reached:
     st.info("🔒 몰입 모드 실행 중...")
 else:
@@ -100,7 +101,6 @@ def submit_text():
 
 st.text_input("내용 입력 👇", key="widget_input", on_change=submit_text, placeholder="생각나는 대로 적고 엔터를 누르세요.")
 
-st.subheader("📝 작성된 내용")
 
 # 스크롤 유지 기능 (MutationObserver)
 js_observer = f"""
@@ -140,6 +140,7 @@ js_observer = f"""
     <div style="display:none;">{time.time()}</div>
     """
 components.html(js_observer, height=0)
+
 
 
 
