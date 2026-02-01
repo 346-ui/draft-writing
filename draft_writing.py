@@ -139,7 +139,8 @@ js_observer = f"""
     </script>
     <div style="display:none;">{time.time()}</div>
     """
-    components.html(js_observer, height=0)
+components.html(js_observer, height=0)
+
 
 
 
