@@ -9,6 +9,32 @@ st.set_page_config(page_title="초고 전용 몰입 글쓰기", page_icon="✍�
 # [핵심] 로컬 스토리지 초기화
 localS = LocalStorage()
 
+# ==========================================
+# [★ 핵심 수정] 초기화 콜백 함수 정의
+# 이 함수가 버튼 클릭 시 가장 먼저 실행되어 데이터를 정리합니다.
+# ==========================================
+def reset_callback():
+    # 1. 세션 상태 초기화 (값들을 기본값으로 되돌림)
+    st.session_state["full_text"] = ""
+    st.session_state["target_count_val"] = 1000
+    st.session_state["show_counter_val"] = True
+    st.session_state["hide_history_val"] = False
+    st.session_state["confirm_reset"] = False # 경고창 닫기
+    
+    # 2. 로컬 스토리지 삭제 (에러 방지용 try-except 포함)
+    keys_to_delete = [
+        "my_draft_text", 
+        "my_target_count", 
+        "setting_show_counter", 
+        "setting_hide_history"
+    ]
+    
+    for key in keys_to_delete:
+        try:
+            localS.deleteItem(key, key=f"del_{key}") # key 충돌 방지용 고유 key 추가
+        except:
+            pass
+
 # 세션에 목표 글자 수가 없다면, 로컬 스토리지에서 확인해서 가져옴
 if "target_count_val" not in st.session_state:
     saved_target = localS.getItem("my_target_count") # 저장된 키: my_target_count
@@ -93,23 +119,8 @@ with st.sidebar:
         st.warning("정말 모든 내용을 삭제하시겠습니까?")
         col1, col2 = st.columns(2)
         if col1.button("✅ 예"):
-            st.session_state["full_text"] = ""
-            # [핵심] 초기화 시 로컬 스토리지도 비우기
-            try: localS.deleteItem("my_draft_text", key="del_text")
-            except KeyError: pass
-            try: localS.deleteItem("my_target_count", key="del_target")
-            except KeyError: pass
-            try: localS.deleteItem("setting_show_counter", key="del_show")
-            except KeyError: pass
-            try: localS.deleteItem("setting_hide_history", key="del_hide")
-            except KeyError: pass
-            
-            st.session_state["confirm_reset"] = False
-            st.session_state["target_count_val"] = 1000
-            st.session_state["show_counter_val"] = True
-            st.session_state["hide_history_val"] = False
-            
-            st.rerun()
+            on_click=reset_callbackFalse
+
         if col2.button("❌ 아니오"):
             st.session_state["confirm_reset"] = False
             st.rerun()
@@ -208,6 +219,7 @@ js_observer = f"""
     <div style="display:none;">{time.time()}</div>
     """
 components.html(js_observer, height=0)
+
 
 
 
