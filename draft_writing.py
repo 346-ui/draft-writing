@@ -95,10 +95,14 @@ with st.sidebar:
         if col1.button("✅ 예"):
             st.session_state["full_text"] = ""
             # [핵심] 초기화 시 로컬 스토리지도 비우기
-            localS.deleteItem("my_draft_text", key="del_text")
-            localS.deleteItem("my_target_count", key="del_target")
-            localS.deleteItem("setting_show_counter", key="del_show")
-            localS.deleteItem("setting_hide_history", key="del_hide")
+            try: localS.deleteItem("my_draft_text", key="del_text")
+                except KeyError: pass
+            try: localS.deleteItem("my_target_count", key="del_target")
+                except KeyError: pass
+            try: localS.deleteItem("setting_show_counter", key="del_show")
+                except KeyError: pass
+            try: localS.deleteItem("setting_hide_history", key="del_hide")
+                except KeyError: pass
             
             st.session_state["confirm_reset"] = False
             st.session_state["target_count_val"] = 1000
@@ -204,6 +208,7 @@ js_observer = f"""
     <div style="display:none;">{time.time()}</div>
     """
 components.html(js_observer, height=0)
+
 
 
 
