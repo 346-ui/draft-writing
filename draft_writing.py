@@ -118,8 +118,7 @@ with st.sidebar:
     if st.session_state["confirm_reset"]:
         st.warning("정말 모든 내용을 삭제하시겠습니까?")
         col1, col2 = st.columns(2)
-        if col1.button("✅ 예"):
-            on_click=reset_callbackFalse
+        col1.button("✅ 예", on_click=reset_callback)
 
         if col2.button("❌ 아니오"):
             st.session_state["confirm_reset"] = False
@@ -219,6 +218,7 @@ js_observer = f"""
     <div style="display:none;">{time.time()}</div>
     """
 components.html(js_observer, height=0)
+
 
 
 
