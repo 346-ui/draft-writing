@@ -143,12 +143,15 @@ if show_counter:
 # [핵심] 텍스트 입력 및 저장 처리 함수
 
 st.subheader("📝 작성된 내용")
-if hide_history and not is_goal_reached:
-    st.info("🔒 몰입 모드 실행 중...")
+if hide_history:
+    if is_goal_reached:
+        st.info("🔒 몰입 모드 실행 중... 내용을 확인하려면 사이드바에서 몰입모드를 해제하세요")
+    else:
+        st.info("🔒 몰입 모드 실행 중...")
 else:
     st.text_area("히스토리", st.session_state["full_text"], height=400, disabled=not is_goal_reached, label_visibility="collapsed")
-    if is_goal_reached:
-        st.caption("🔓 잠금 해제됨: 자유롭게 수정 가능합니다.")
+if is_goal_reached and not hide_history:
+    st.caption("🔓 잠금 해제됨: 자유롭게 수정 가능합니다.")
         
 def submit_text():
     input_text = st.session_state.widget_input
@@ -201,6 +204,7 @@ js_observer = f"""
     <div style="display:none;">{time.time()}</div>
     """
 components.html(js_observer, height=0)
+
 
 
 
